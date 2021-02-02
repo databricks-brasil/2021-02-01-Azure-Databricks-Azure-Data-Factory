@@ -1,0 +1,1586 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "dbbdemodatafactory"
+        },
+        "ls_storageaccount_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'ls_storageaccount'"
+        },
+        "ls_databricks_new_job_cluster_accessToken": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accessToken' of 'ls_databricks_new_job_cluster'"
+        },
+        "ls_databricks_interactive_cluster_accessToken": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accessToken' of 'ls_databricks_interactive_cluster'"
+        },
+        "ls_sqldatabase_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'ls_sqldatabase'"
+        },
+        "ls_rest_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "http://dummy.restapiexample.com/api/v1/employees"
+        },
+        "ls_rest_posts_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://dummyapi.io/data/api/post?limit=100"
+        },
+        "ls_rest_users_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://dummyapi.io/data/api/user?limit=100"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/RestPosts')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_rest_posts",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "RestResource",
+                "typeProperties": {},
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_rest_posts')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LandingPosts')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_storageaccount",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pPartition": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": "posts.json",
+                        "folderPath": {
+                            "value": "@dataset().pPartition",
+                            "type": "Expression"
+                        },
+                        "container": "landing"
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_storageaccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/Landing')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_storageaccount",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pPartition": {
+                        "type": "string"
+                    },
+                    "pFileName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@dataset().pFileName",
+                            "type": "Expression"
+                        },
+                        "folderPath": {
+                            "value": "@dataset().pPartition",
+                            "type": "Expression"
+                        },
+                        "container": "landing"
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_storageaccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/RestUsers')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_rest_users",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "RestResource",
+                "typeProperties": {},
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_rest_users')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/Staging')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_storageaccount",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pPartition": {
+                        "type": "string"
+                    },
+                    "pFileName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@dataset().pFileName",
+                            "type": "Expression"
+                        },
+                        "folderPath": {
+                            "value": "@dataset().pPartition",
+                            "type": "Expression"
+                        },
+                        "container": "staging"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": [
+                    {
+                        "name": "first_name",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "last_name",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "company_name",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "address",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "city",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "county",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "postal",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "phone1",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "phone2",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "email",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "web",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "FileName",
+                        "type": "UTF8"
+                    },
+                    {
+                        "name": "FileDate",
+                        "type": "DATE"
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_storageaccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/SQLDatabase')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_sqldatabase",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pSchema": {
+                        "type": "string"
+                    },
+                    "pTable": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [],
+                "typeProperties": {
+                    "schema": {
+                        "value": "@dataset().pSchema",
+                        "type": "Expression"
+                    },
+                    "table": {
+                        "value": "@dataset().pTable",
+                        "type": "Expression"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_sqldatabase')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/StagingFolder')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_storageaccount",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pPartition": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "folderPath": {
+                            "value": "@dataset().pPartition",
+                            "type": "Expression"
+                        },
+                        "container": "staging"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_storageaccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/CuratedFolder')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "ls_storageaccount",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "pPartition": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "folderPath": {
+                            "value": "@dataset().pPartition",
+                            "type": "Expression"
+                        },
+                        "container": "curated"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_storageaccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_storageaccount')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('ls_storageaccount_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_rest')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "RestService",
+                "typeProperties": {
+                    "url": "[parameters('ls_rest_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Anonymous"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_rest_posts')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "RestService",
+                "typeProperties": {
+                    "url": "[parameters('ls_rest_posts_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Anonymous"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_rest_users')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "RestService",
+                "typeProperties": {
+                    "url": "[parameters('ls_rest_users_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Anonymous"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_databricks_new_job_cluster')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureDatabricks",
+                "typeProperties": {
+                    "domain": "https://adb-8877356675125928.8.azuredatabricks.net",
+                    "accessToken": {
+                        "type": "SecureString",
+                        "value": "[parameters('ls_databricks_new_job_cluster_accessToken')]"
+                    },
+                    "newClusterNodeType": "Standard_F4s",
+                    "newClusterNumOfWorker": "1",
+                    "newClusterVersion": "7.5.x-scala2.12"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_databricks_interactive_cluster')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureDatabricks",
+                "typeProperties": {
+                    "domain": "https://adb-8877356675125928.8.azuredatabricks.net",
+                    "accessToken": {
+                        "type": "SecureString",
+                        "value": "[parameters('ls_databricks_interactive_cluster_accessToken')]"
+                    },
+                    "existingClusterId": "0201-193056-moral563"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ls_sqldatabase')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "connectionString": "[parameters('ls_sqldatabase_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TL-Interactive-Cluster')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Users",
+                        "type": "DatabricksNotebook",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "notebookPath": "/User",
+                            "baseParameters": {
+                                "pPartition": {
+                                    "value": "@pipeline().parameters.pPartition",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "ls_databricks_interactive_cluster",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "Posts",
+                        "type": "DatabricksNotebook",
+                        "dependsOn": [
+                            {
+                                "activity": "Users",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "notebookPath": "/Post",
+                            "baseParameters": {
+                                "pParameter": {
+                                    "value": "@pipeline().parameters.pPartition",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "ls_databricks_interactive_cluster",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "Users by Title",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Posts",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "UsersByTitle"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Posts Likes by User",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Posts",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "PostsLikesByUser"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "parameters": {
+                    "pPartition": {
+                        "type": "string",
+                        "defaultValue": "2021/02/01/"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-02-01T19:13:49Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_databricks_interactive_cluster')]",
+                "[concat(variables('factoryId'), '/datasets/CuratedFolder')]",
+                "[concat(variables('factoryId'), '/datasets/SQLDatabase')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TL-New-Job-Cluster-Single-Notebook')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Users and Posts",
+                        "type": "DatabricksNotebook",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "notebookPath": "/User + Post",
+                            "baseParameters": {
+                                "pPartition": {
+                                    "value": "@pipeline().parameters.pPartition",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "ls_databricks_new_job_cluster",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "Users by Title",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Users and Posts",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "UsersByTitle"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Posts Likes by User",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Users and Posts",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "PostsLikesByUser"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "parameters": {
+                    "pPartition": {
+                        "type": "string",
+                        "defaultValue": "2021/02/01"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-02-01T20:42:06Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_databricks_new_job_cluster')]",
+                "[concat(variables('factoryId'), '/datasets/CuratedFolder')]",
+                "[concat(variables('factoryId'), '/datasets/SQLDatabase')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/EL')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Exteact-Loat-Transform-Load",
+                "activities": [
+                    {
+                        "name": "Posts Landing",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Set Partition",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "RestSource",
+                                "httpRequestTimeout": "00:01:40",
+                                "requestInterval": "00.00:00:00.010",
+                                "requestMethod": "GET",
+                                "additionalHeaders": {
+                                    "app-id": "6016fd9eb2438dda9db3b0ed"
+                                }
+                            },
+                            "sink": {
+                                "type": "JsonSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "formatSettings": {
+                                    "type": "JsonWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "RestPosts",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "Landing",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "posts.json"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Set Partition",
+                        "type": "SetVariable",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "vParttion",
+                            "value": {
+                                "value": "@concat(formatDateTime(utcNow(), 'yyyy'),'/',formatDateTime(utcNow(), 'MM'),'/',formatDateTime(utcNow(), 'dd'),'/')",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Posts Staging",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Posts Landing",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "JsonSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "JsonReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "ParquetSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings",
+                                    "copyBehavior": "FlattenHierarchy"
+                                },
+                                "formatSettings": {
+                                    "type": "ParquetWriteSettings"
+                                }
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "mappings": [
+                                    {
+                                        "source": {
+                                            "path": "[['owner']['email']"
+                                        },
+                                        "sink": {
+                                            "name": "email"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['owner']['title']"
+                                        },
+                                        "sink": {
+                                            "name": "title"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['owner']['firstName']"
+                                        },
+                                        "sink": {
+                                            "name": "firstName"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['owner']['lastName']"
+                                        },
+                                        "sink": {
+                                            "name": "lastName"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['image']"
+                                        },
+                                        "sink": {
+                                            "name": "image"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['publishDate']"
+                                        },
+                                        "sink": {
+                                            "name": "publishDate"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['text']"
+                                        },
+                                        "sink": {
+                                            "name": "text"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['tags']"
+                                        },
+                                        "sink": {
+                                            "name": "tags"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['link']"
+                                        },
+                                        "sink": {
+                                            "name": "link"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['likes']"
+                                        },
+                                        "sink": {
+                                            "name": "likes"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['total']"
+                                        },
+                                        "sink": {
+                                            "name": "total"
+                                        }
+                                    }
+                                ],
+                                "collectionReference": "$['data']",
+                                "mapComplexValuesToString": true
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "Landing",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "posts.json"
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "Staging",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "posts.parquet"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Users Landing",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Set Partition",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "RestSource",
+                                "httpRequestTimeout": "00:01:40",
+                                "requestInterval": "00.00:00:00.010",
+                                "requestMethod": "GET",
+                                "additionalHeaders": {
+                                    "app-id": "6016fd9eb2438dda9db3b0ed"
+                                }
+                            },
+                            "sink": {
+                                "type": "JsonSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "formatSettings": {
+                                    "type": "JsonWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "RestUsers",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "Landing",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "users.json"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Users Staging",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Users Landing",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "JsonSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "JsonReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "ParquetSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings",
+                                    "copyBehavior": "FlattenHierarchy"
+                                },
+                                "formatSettings": {
+                                    "type": "ParquetWriteSettings"
+                                }
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "mappings": [
+                                    {
+                                        "source": {
+                                            "path": "[['id']"
+                                        },
+                                        "sink": {
+                                            "name": "id"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['lastName']"
+                                        },
+                                        "sink": {
+                                            "name": "lastName"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['firstName']"
+                                        },
+                                        "sink": {
+                                            "name": "firstName"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['email']"
+                                        },
+                                        "sink": {
+                                            "name": "email"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['title']"
+                                        },
+                                        "sink": {
+                                            "name": "title"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "[['picture']"
+                                        },
+                                        "sink": {
+                                            "name": "picture"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['total']"
+                                        },
+                                        "sink": {
+                                            "name": "total"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['page']"
+                                        },
+                                        "sink": {
+                                            "name": "page"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['limit']"
+                                        },
+                                        "sink": {
+                                            "name": "limit"
+                                        }
+                                    },
+                                    {
+                                        "source": {
+                                            "path": "$['offset']"
+                                        },
+                                        "sink": {
+                                            "name": "offset"
+                                        }
+                                    }
+                                ],
+                                "collectionReference": "$['data']",
+                                "mapComplexValuesToString": true
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "Landing",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "users.json"
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "Staging",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', variables('vParttion'))",
+                                        "type": "Expression"
+                                    },
+                                    "pFileName": "users.parquet"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "TL",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "Posts Staging",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "Users Staging",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "TL-Interactive-Cluster",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    }
+                ],
+                "variables": {
+                    "vParttion": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-02-01T21:29:40Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/RestPosts')]",
+                "[concat(variables('factoryId'), '/datasets/Landing')]",
+                "[concat(variables('factoryId'), '/datasets/Staging')]",
+                "[concat(variables('factoryId'), '/datasets/RestUsers')]",
+                "[concat(variables('factoryId'), '/pipelines/TL-Interactive-Cluster')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TL-New-Job-Cluster')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Users",
+                        "type": "DatabricksNotebook",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "notebookPath": "/User",
+                            "baseParameters": {
+                                "pPartition": {
+                                    "value": "@pipeline().parameters.pPartition",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "ls_databricks_new_job_cluster",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "Posts",
+                        "type": "DatabricksNotebook",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "notebookPath": "/Post",
+                            "baseParameters": {
+                                "pParameter": {
+                                    "value": "@pipeline().parameters.pPartition",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "ls_databricks_new_job_cluster",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "Users by Title",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Users",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('users/', pipeline().parameters.pPartition, 'users-by-title')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "UsersByTitle"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Posts Likes by User",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Posts",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFolderPath": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    },
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "sink": {
+                                "type": "AzureSqlSink",
+                                "tableOption": "autoCreate"
+                            },
+                            "enableStaging": false,
+                            "translator": {
+                                "type": "TabularTranslator",
+                                "typeConversion": true,
+                                "typeConversionSettings": {
+                                    "allowDataTruncation": true,
+                                    "treatBooleanAsNumber": false
+                                }
+                            }
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "CuratedFolder",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pPartition": {
+                                        "value": "@concat('posts/', pipeline().parameters.pPartition, 'posts-likes-by-user')\n",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "SQLDatabase",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "pSchema": "dbo",
+                                    "pTable": "PostsLikesByUser"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "parameters": {
+                    "pPartition": {
+                        "type": "string",
+                        "defaultValue": "2021/02/01"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2021-02-01T20:17:07Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/ls_databricks_new_job_cluster')]",
+                "[concat(variables('factoryId'), '/datasets/CuratedFolder')]",
+                "[concat(variables('factoryId'), '/datasets/SQLDatabase')]"
+            ]
+        }
+    ]
+}

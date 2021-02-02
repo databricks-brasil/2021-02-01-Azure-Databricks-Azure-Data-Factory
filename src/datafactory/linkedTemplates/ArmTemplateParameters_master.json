@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "dbbdemodatafactory"
+        },
+        "ls_storageaccount_connectionString": {
+            "value": ""
+        },
+        "ls_databricks_new_job_cluster_accessToken": {
+            "value": ""
+        },
+        "ls_databricks_interactive_cluster_accessToken": {
+            "value": ""
+        },
+        "ls_sqldatabase_connectionString": {
+            "value": ""
+        },
+        "ls_rest_properties_typeProperties_url": {
+            "value": "http://dummy.restapiexample.com/api/v1/employees"
+        },
+        "ls_rest_posts_properties_typeProperties_url": {
+            "value": "https://dummyapi.io/data/api/post?limit=100"
+        },
+        "ls_rest_users_properties_typeProperties_url": {
+            "value": "https://dummyapi.io/data/api/user?limit=100"
+        },
+        "containerUri": {
+            "value": ""
+        },
+        "containerSasToken": {
+            "value": ""
+        }
+    }
+}
